@@ -2,7 +2,7 @@
   "name": "kirbysnippetopener",
   "displayName": "Kirby Snippet Opener",
   "description": "simplifies the process of navigating and managing snippet templates in Kirby CMS projects",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.94.0"
   },
@@ -34,7 +34,7 @@
       "properties": {
         "kirbysnippetopener.snippetPath": {
           "type": "string",
-          "default": "snippets",
+          "default": "site/snippets",
           "description": "Relative Pfad zum Snippets-Ordner im Projektverzeichnis."
         }
       }
