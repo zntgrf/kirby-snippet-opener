@@ -34,7 +34,7 @@
       "properties": {
         "kirbysnippetopener.snippetPath": {
           "type": "string",
-          "default": "snippets",
+          "default": "site/snippets",
           "description": "Relative Pfad zum Snippets-Ordner im Projektverzeichnis."
         }
       }
