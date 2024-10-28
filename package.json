@@ -2,7 +2,7 @@
   "name": "kirbysnippetopener",
   "displayName": "Kirby Snippet Opener",
   "description": "simplifies the process of navigating and managing snippet templates in Kirby CMS projects",
-  "version": "0.0.4",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.94.0"
   },
@@ -44,9 +44,23 @@
     "commands": [
       {
         "command": "kirbysnippetopener.openSnippet",
-        "title": "Open Kirby Snippet"
+        "title": "Open Kirby Snippet",
+        "enablement": "editorLangId == php"
+      },
+      {
+        "command": "kirbysnippetopener.createSnippetFromSelection",
+        "title": "Create Snippet from Selection",
+        "enablement": "editorLangId == php"
       }
-    ]
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "kirbysnippetopener.createSnippetFromSelection",
+          "when": "editorHasSelection"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

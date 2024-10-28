@@ -10,6 +10,7 @@
 
 - **CodeLens Integration**: Easily see clickable `Open Snippet` links above each `snippet()` call, making it quick and efficient to navigate to snippet files without needing additional shortcuts.
 
+- **Create Snippet from Selection**: Select one or more lines of code, run the createSnippetFromSelection command from Context-Menu (right click) or Command-Menu, enter the desired file path, and press Enter.
 ## Usage
 
 1. **Configure the Snippet Path**:
@@ -21,5 +22,3 @@
 This extension streamlines working with Kirby snippets and enhances productivity by providing fast navigation within your Kirby templates. Perfect for developers who want a seamless way to handle snippet files in Kirby CMS projects.
 
 ## Ideas
-
-- **Create Snippet from Selection**: Select one or more lines of code, run the createSnippetFromSelection command, enter the desired file path, and press Enter.

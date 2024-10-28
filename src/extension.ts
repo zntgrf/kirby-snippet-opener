@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
-
+import * as fs from "fs";
+import * as path from "path";
 /**
  * Activates the extension.
  *
@@ -13,6 +14,14 @@ import * as vscode from "vscode";
  * Additionally, this function registers a CodeLens provider for the extension.
  */
 export function activate(context: vscode.ExtensionContext) {
+  createSnippetFromSelection(context);
+  openSnippet(context);
+
+  // CodeLens-Provider registrieren
+  registerSnippetCodeLensProvider();
+}
+
+export const openSnippet = (context: vscode.ExtensionContext) => {
   const openSnippet = vscode.commands.registerCommand(
     "kirbysnippetopener.openSnippet",
     async (snippetName: string) => {
@@ -41,10 +50,88 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(openSnippet);
+};
 
-  // CodeLens-Provider registrieren
-  registerSnippetCodeLensProvider();
-}
+export const createSnippetFromSelection = (
+  context: vscode.ExtensionContext
+) => {
+  const createSnippetFromSelection = vscode.commands.registerCommand(
+    "kirbysnippetopener.createSnippetFromSelection",
+    async () => {
+      // Get the active editor and selected text
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showErrorMessage("No active editor found.");
+        return;
+      }
+
+      const selection = editor.selection;
+      const selectedText = editor.document.getText(selection);
+      if (!selectedText) {
+        vscode.window.showErrorMessage("No text selected.");
+        return;
+      }
+
+      // Prompt the user to enter a file path for the snippet
+      const snippetPath = await vscode.window.showInputBox({
+        prompt:
+          "Enter the file path for the new snippet without suffix (e.g., components/card)",
+        placeHolder: "components/card",
+      });
+      if (!snippetPath) {
+        vscode.window.showErrorMessage("No file path entered.");
+        return;
+      }
+
+      const snippetConfigPath = vscode.workspace
+        .getConfiguration("kirbysnippetopener")
+        .get<string>("snippetPath");
+
+      if (!snippetConfigPath) {
+        vscode.window.showErrorMessage(
+          "You must set a snippet path in Vscode-Configuration."
+        );
+        return;
+      }
+
+      // Construct the full file path
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        vscode.window.showErrorMessage("No workspace folder found.");
+        return;
+      }
+
+      const fullPath = path.join(
+        workspaceFolder.uri.fsPath,
+        snippetConfigPath,
+        `${snippetPath}.php`
+      );
+
+      // Write the selected text to the new snippet file
+      try {
+        fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+        fs.writeFileSync(fullPath, selectedText, "utf8");
+        vscode.window.showInformationMessage(
+          `Snippet created at ${snippetPath}`
+        );
+
+        // Replace the selected text with the snippet() function call
+        await editor.edit((editBuilder) => {
+          const snippetCall = `snippet('${snippetPath
+            .replace(/^snippets\//, "")
+            .replace(/\.php$/, "")}')`;
+          editBuilder.replace(selection, snippetCall);
+        });
+      } catch (error: any) {
+        vscode.window.showErrorMessage(
+          `Error creating snippet: ${error.message}`
+        );
+      }
+    }
+  );
+
+  context.subscriptions.push(createSnippetFromSelection);
+};
 
 /**
  * Registers a CodeLens provider for PHP files that detects snippets and provides
