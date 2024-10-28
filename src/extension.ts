@@ -31,10 +31,14 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(openSnippet);
 
   // CodeLens-Provider registrieren
+  registerSnippetCodeLensProvider();
+}
+
+export function registerSnippetCodeLensProvider() {
   vscode.languages.registerCodeLensProvider("php", {
     provideCodeLenses(document) {
       const codeLenses: vscode.CodeLens[] = [];
-      const regex = /snippet\(['"]([^'"]+)['"]\)/g;
+      const regex = snippetRegex();
       let match;
       while ((match = regex.exec(document.getText())) !== null) {
         const snippetName = match[1];
@@ -53,4 +57,8 @@ export function activate(context: vscode.ExtensionContext) {
       return codeLenses;
     },
   });
+}
+
+export function snippetRegex() {
+  return /snippet\(['"]([^'"]+)['"]\)/g;
 }
