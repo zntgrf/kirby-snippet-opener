@@ -2,7 +2,7 @@
   "name": "kirbysnippetopener",
   "displayName": "Kirby Snippet Opener",
   "description": "simplifies the process of navigating and managing snippet templates in Kirby CMS projects",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.94.0"
   },
@@ -10,6 +10,7 @@
     "type": "git",
     "url": "https://github.com/zntgrf/kirby-snippet-opener"
   },
+  "icon": "images/icon.png",
   "categories": [
     "Other"
   ],
