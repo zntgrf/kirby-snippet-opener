@@ -1,5 +1,17 @@
 import * as vscode from "vscode";
 
+/**
+ * Activates the extension.
+ *
+ * @param context - The extension context provided by VS Code.
+ *
+ * This function registers the command `kirbysnippetopener.openSnippet` which opens a PHP snippet file
+ * based on the provided snippet name. It reads the snippet path from the extension's configuration,
+ * constructs the full path to the snippet file, and attempts to open it in the editor. If the file
+ * cannot be found, an error message is displayed.
+ *
+ * Additionally, this function registers a CodeLens provider for the extension.
+ */
 export function activate(context: vscode.ExtensionContext) {
   const openSnippet = vscode.commands.registerCommand(
     "kirbysnippetopener.openSnippet",
@@ -34,6 +46,16 @@ export function activate(context: vscode.ExtensionContext) {
   registerSnippetCodeLensProvider();
 }
 
+/**
+ * Registers a CodeLens provider for PHP files that detects snippets and provides
+ * a command to open them.
+ *
+ * This function uses a regular expression to find snippets in the document text,
+ * creates a range for each match, and associates a CodeLens with a command to
+ * open the snippet.
+ *
+ * @returns {void}
+ */
 export function registerSnippetCodeLensProvider() {
   vscode.languages.registerCodeLensProvider("php", {
     provideCodeLenses(document) {
@@ -59,6 +81,12 @@ export function registerSnippetCodeLensProvider() {
   });
 }
 
+/**
+ * Returns a regular expression that matches the pattern `snippet('...')` or `snippet("...")`.
+ * The pattern captures the content within the parentheses and quotes.
+ *
+ * @returns {RegExp} A regular expression to match snippet patterns.
+ */
 export function snippetRegex() {
   return /snippet\(['"]([^'"]+)['"]\)/g;
 }
