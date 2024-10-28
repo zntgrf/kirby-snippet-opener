@@ -1,14 +1,28 @@
 {
   "name": "kirbysnippetopener",
-  "displayName": "kirbySnippetOpener",
-  "description": "Opens the related snippetfile from Kirby-CMS",
+  "displayName": "Kirby Snippet Opener",
+  "description": "simplifies the process of navigating and managing snippet templates in Kirby CMS projects",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.94.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zntgrf/kirby-snippet-opener"
+  },
   "categories": [
     "Other"
   ],
+  "author": {
+    "name": "sebastian"
+  },
+  "publisher": "zntgrf",
+  "keywords": [
+    "kirby",
+    "snippet",
+    "opener"
+  ],
+  "pricing": "Free",
   "activationEvents": [
     "onLanguage:php"
   ],
