@@ -19,3 +19,7 @@
    Open any Kirby template containing `snippet('...')` calls. Click on the `Open Snippet` link that appears above each call, and the corresponding snippet file will open in the editor.
 
 This extension streamlines working with Kirby snippets and enhances productivity by providing fast navigation within your Kirby templates. Perfect for developers who want a seamless way to handle snippet files in Kirby CMS projects.
+
+## Ideas
+
+- **Create Snippet from Selection**: Select one or more lines of code, run the createSnippetFromSelection command, enter the desired file path, and press Enter.

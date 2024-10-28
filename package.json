@@ -19,9 +19,10 @@
   },
   "publisher": "zntgrf",
   "keywords": [
-    "kirby",
     "snippet",
-    "opener"
+    "opener",
+    "getkirby",
+    "kirbycms"
   ],
   "pricing": "Free",
   "activationEvents": [
