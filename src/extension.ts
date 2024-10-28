@@ -88,5 +88,5 @@ export function registerSnippetCodeLensProvider() {
  * @returns {RegExp} A regular expression to match snippet patterns.
  */
 export function snippetRegex() {
-  return /snippet\(['"]([^'"]+)['"]\)/g;
+  return /snippet\(\s*['"]([^'"]+)['"][\s\S]*?\)/g;
 }

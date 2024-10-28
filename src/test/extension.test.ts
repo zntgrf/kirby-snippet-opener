@@ -5,7 +5,15 @@ import { snippetRegex, registerSnippetCodeLensProvider } from "../extension";
 suite("snippetRegex Test Suite", () => {
   test("snippetRegex should match snippet calls", () => {
     const regex = snippetRegex();
-    const text = `snippet('exampleSnippet')`;
+    const text = `snippet('exampleSnippet',slots:true)`;
+    const match = regex.exec(text);
+    assert.ok(match);
+    assert.strictEqual(match[1], "exampleSnippet");
+  });
+
+  test("snippetRegex should match snippet calls with slot parameter", () => {
+    const regex = snippetRegex();
+    const text = `snippet('exampleSnippet',slots:true)`;
     const match = regex.exec(text);
     assert.ok(match);
     assert.strictEqual(match[1], "exampleSnippet");
@@ -13,7 +21,7 @@ suite("snippetRegex Test Suite", () => {
 
   test("snippetRegex should match multiple snippet calls", () => {
     const regex = snippetRegex();
-    const text = `snippet('firstSnippet'); snippet("secondSnippet")`;
+    const text = `snippet('firstSnippet'); snippet("secondSnippet",$data,false,true)`;
     const matches = [...text.matchAll(regex)];
     assert.strictEqual(matches.length, 2);
     assert.strictEqual(matches[0][1], "firstSnippet");
