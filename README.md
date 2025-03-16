@@ -1,6 +1,8 @@
 # Kirby Snippet Opener
 
-**Kirby Snippet Opener** is a Visual Studio Code extension designed for developers working with the [Kirby CMS](https://getkirby.com). It simplifies the process of navigating and managing snippet templates in Kirby projects, allowing you to open snippet files directly from template calls in your code.
+[**Kirby Snippet Opener**](https://marketplace.visualstudio.com/items?itemName=zntgrf.kirbysnippetopener) is a Visual Studio Code extension designed for developers working with the [Kirby CMS](https://getkirby.com). It simplifies the process of navigating and managing snippet templates in Kirby projects, allowing you to open snippet files directly from template calls in your code.
+
+[on Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=zntgrf.kirbysnippetopener)
 
 ## Key Features
 
