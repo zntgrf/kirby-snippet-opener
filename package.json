@@ -2,7 +2,7 @@
   "name": "kirbysnippetopener",
   "displayName": "Kirby Snippet Opener",
   "description": "simplifies the process of navigating and managing snippet templates in Kirby CMS projects",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "engines": {
     "vscode": "^1.94.0"
   },
