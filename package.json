@@ -2,7 +2,7 @@
   "name": "kirbysnippetopener",
   "displayName": "Kirby Snippet Opener",
   "description": "simplifies the process of navigating and managing snippet templates in Kirby CMS projects",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "engines": {
     "vscode": "^1.94.0"
   },
@@ -34,10 +34,22 @@
       "type": "object",
       "title": "Kirby Snippet Opener",
       "properties": {
+        "kirbysnippetopener.snippetPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "site/snippets",
+            "site/plugins/*/snippets"
+          ],
+          "description": "Relative paths to snippet folders. Glob patterns like 'site/plugins/*/snippets' are supported."
+        },
         "kirbysnippetopener.snippetPath": {
           "type": "string",
           "default": "site/snippets",
-          "description": "Relative Pfad zum Snippets-Ordner im Projektverzeichnis."
+          "description": "Deprecated: Use snippetPaths instead.",
+          "deprecationMessage": "Use kirbysnippetopener.snippetPaths instead."
         }
       }
     },
@@ -68,17 +80,19 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "test:unit": "vitest run"
   },
   "devDependencies": {
-    "@types/vscode": "^1.94.0",
     "@types/mocha": "^10.0.9",
     "@types/node": "20.x",
+    "@types/vscode": "^1.94.0",
     "@typescript-eslint/eslint-plugin": "^8.10.0",
     "@typescript-eslint/parser": "^8.7.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
     "eslint": "^9.13.0",
     "typescript": "^5.6.3",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "vitest": "^4.0.18"
   }
 }
