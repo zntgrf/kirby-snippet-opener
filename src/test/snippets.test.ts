@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   DEFAULT_SNIPPET_PATHS,
+  findSnippetCallAt,
   findSnippetCalls,
   findSnippetCreationBase,
   normalizeSnippetName,
@@ -114,6 +115,32 @@ describe("findSnippetCalls", () => {
     const text = `snippet('card')`;
 
     expect(names(text)).toEqual(names(text));
+  });
+});
+
+describe("findSnippetCallAt", () => {
+  const line = `<?php snippet('card'); snippet('other') ?>`;
+
+  it.each([
+    { label: "on the function name", offset: line.indexOf("snippet"), expected: "card" },
+    { label: "on the opening quote", offset: line.indexOf("'card'"), expected: "card" },
+    { label: "inside the name", offset: line.indexOf("card") + 2, expected: "card" },
+    { label: "on the closing paren", offset: line.indexOf("');") + 1, expected: "card" },
+    { label: "inside the second call", offset: line.indexOf("other") + 1, expected: "other" }
+  ])("finds the call with the cursor $label", ({ offset, expected }) => {
+    expect(findSnippetCallAt(line, offset)?.name).toBe(expected);
+  });
+
+  it.each([
+    { label: "before any call", offset: 0 },
+    { label: "between two calls", offset: line.indexOf("; snippet") + 1 },
+    { label: "after the last call", offset: line.length }
+  ])("returns undefined with the cursor $label", ({ offset }) => {
+    expect(findSnippetCallAt(line, offset)).toBeUndefined();
+  });
+
+  it("returns undefined when there is no call at all", () => {
+    expect(findSnippetCallAt(`echo 'hello';`, 3)).toBeUndefined();
   });
 });
 

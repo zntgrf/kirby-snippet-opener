@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import {
+  findSnippetCallAt,
   findSnippetCalls,
   findSnippetCreationBase,
   normalizeSnippetName,
@@ -22,7 +23,15 @@ export function activate(context: vscode.ExtensionContext) {
 function registerOpenSnippetCommand(): vscode.Disposable {
   return vscode.commands.registerCommand(
     "kirbysnippetopener.openSnippet",
-    async (snippetName: string) => {
+    async (argument?: string) => {
+      // Invoked from the command palette there is no argument, so fall back
+      // to the call the cursor sits in.
+      const snippetName = argument ?? findSnippetNameAtCursor();
+      if (!snippetName) {
+        vscode.window.showErrorMessage("No snippet call at the cursor.");
+        return;
+      }
+
       const snippetUri = await resolveSnippetUri(snippetName);
       if (!snippetUri) {
         vscode.window.showErrorMessage(
@@ -35,6 +44,18 @@ function registerOpenSnippetCommand(): vscode.Disposable {
       await vscode.window.showTextDocument(doc);
     }
   );
+}
+
+/** The snippet name of the call the cursor is in, if there is one. */
+function findSnippetNameAtCursor(): string | undefined {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    return undefined;
+  }
+
+  const offset = editor.document.offsetAt(editor.selection.active);
+
+  return findSnippetCallAt(editor.document.getText(), offset)?.name;
 }
 
 function registerCreateSnippetFromSelectionCommand(): vscode.Disposable {

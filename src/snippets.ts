@@ -6,12 +6,16 @@
  * use "/" as separator; turning them into URIs is the caller's job.
  */
 
-/** A `snippet(...)` call, with absolute offsets of the name inside the text. */
+/** A `snippet(...)` call, with absolute offsets into the text it was found in. */
 export interface SnippetCall {
   name: string;
   quote: string;
+  /** Offsets of the name itself, without the surrounding quotes. */
   nameStart: number;
   nameEnd: number;
+  /** Offsets of the matched call, from `snippet(` up to the end of the name. */
+  start: number;
+  end: number;
 }
 
 /**
@@ -37,7 +41,14 @@ export function findSnippetCalls(text: string): SnippetCall[] {
     const name = match[2];
     const nameStart = match.index + match[0].indexOf(quote) + 1;
 
-    calls.push({ name, quote, nameStart, nameEnd: nameStart + name.length });
+    calls.push({
+      name,
+      quote,
+      nameStart,
+      nameEnd: nameStart + name.length,
+      start: match.index,
+      end: match.index + match[0].length
+    });
   }
 
   return calls;
@@ -68,6 +79,17 @@ export function normalizeSnippetName(input: string): string | null {
   }
 
   return name;
+}
+
+/**
+ * The call the given offset sits in, if any. Used to answer "which snippet is
+ * under the cursor". Only the call up to the end of the first argument counts,
+ * so a cursor deep inside later arguments is not treated as a hit.
+ */
+export function findSnippetCallAt(text: string, offset: number): SnippetCall | undefined {
+  return findSnippetCalls(text).find(
+    (call) => offset >= call.start && offset <= call.end
+  );
 }
 
 export const DEFAULT_SNIPPET_PATHS = ["site/snippets", "site/plugins/*/snippets"];
