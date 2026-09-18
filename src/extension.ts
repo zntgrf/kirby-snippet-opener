@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import {
   findSnippetCalls,
   findSnippetCreationBase,
+  normalizeSnippetName,
   resolveSnippetFile,
   resolveSnippetPaths,
   SnippetCall,
@@ -52,14 +53,14 @@ function registerCreateSnippetFromSelectionCommand(): vscode.Disposable {
         return;
       }
 
-      const snippetPath = await promptForSnippetPath();
-      if (!snippetPath) {
+      const snippetName = await promptForSnippetName();
+      if (!snippetName) {
         return;
       }
 
-      const success = await createSnippetFile(snippetPath, selectedText);
+      const success = await createSnippetFile(snippetName, selectedText);
       if (success) {
-        await replaceSelectionWithSnippetCall(editor, snippetPath);
+        await replaceSelectionWithSnippetCall(editor, snippetName);
       }
     }
   );
@@ -163,14 +164,21 @@ function getSnippetPaths(): string[] {
   });
 }
 
-async function promptForSnippetPath(): Promise<string | undefined> {
-  return await vscode.window.showInputBox({
+/** Asks for a snippet name and hands back the normalized form, or undefined. */
+async function promptForSnippetName(): Promise<string | undefined> {
+  const input = await vscode.window.showInputBox({
     prompt: "Enter the file path for the new snippet without suffix (e.g., components/card)",
     placeHolder: "components/card",
+    validateInput: (value) =>
+      value.trim() && !normalizeSnippetName(value)
+        ? "Not a valid snippet path."
+        : undefined,
   });
+
+  return input ? normalizeSnippetName(input) ?? undefined : undefined;
 }
 
-async function createSnippetFile(snippetPath: string, content: string): Promise<boolean> {
+async function createSnippetFile(snippetName: string, content: string): Promise<boolean> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   const targetBase = findSnippetCreationBase(getSnippetPaths());
 
@@ -187,7 +195,7 @@ async function createSnippetFile(snippetPath: string, content: string): Promise<
   const fullUri = vscode.Uri.joinPath(
     workspaceFolder.uri,
     targetBase,
-    `${snippetPath}.php`
+    `${snippetName}.php`
   );
 
   const dirUri = vscode.Uri.joinPath(fullUri, "..");
@@ -195,7 +203,7 @@ async function createSnippetFile(snippetPath: string, content: string): Promise<
   try {
     await vscode.workspace.fs.createDirectory(dirUri);
     await vscode.workspace.fs.writeFile(fullUri, Buffer.from(content, "utf8"));
-    vscode.window.showInformationMessage(`Snippet created at ${snippetPath}`);
+    vscode.window.showInformationMessage(`Snippet created at ${snippetName}`);
     return true;
   } catch (error: any) {
     vscode.window.showErrorMessage(`Error creating snippet: ${error.message}`);
@@ -205,13 +213,9 @@ async function createSnippetFile(snippetPath: string, content: string): Promise<
 
 async function replaceSelectionWithSnippetCall(
   editor: vscode.TextEditor,
-  snippetPath: string
+  snippetName: string
 ): Promise<void> {
-  const cleanPath = snippetPath
-    .replace(/^snippets\//, "")
-    .replace(/\.php$/, "");
-
-  const snippetCall = `snippet('${cleanPath}')`;
+  const snippetCall = `snippet('${snippetName}')`;
 
   await editor.edit((editBuilder) => {
     editBuilder.replace(editor.selection, snippetCall);

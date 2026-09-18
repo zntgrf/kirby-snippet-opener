@@ -43,6 +43,33 @@ export function findSnippetCalls(text: string): SnippetCall[] {
   return calls;
 }
 
+/**
+ * Turns what a user typed into the input box into a snippet name.
+ *
+ * The same value has to drive both the file that gets written and the
+ * snippet(...) call that replaces the selection, otherwise the two drift
+ * apart. Returns null if the input cannot be used as a snippet name.
+ */
+export function normalizeSnippetName(input: string): string | null {
+  const name = input
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "")
+    .replace(/^snippets\//, "")
+    .replace(/\.php$/i, "");
+
+  if (!name) {
+    return null;
+  }
+
+  // No empty, "." or ".." segments: a snippet must stay inside its folder.
+  if (name.split("/").some((segment) => segment === "" || /^\.+$/.test(segment))) {
+    return null;
+  }
+
+  return name;
+}
+
 export const DEFAULT_SNIPPET_PATHS = ["site/snippets", "site/plugins/*/snippets"];
 
 export interface SnippetPathConfig {

@@ -6,6 +6,7 @@ import {
   DEFAULT_SNIPPET_PATHS,
   findSnippetCalls,
   findSnippetCreationBase,
+  normalizeSnippetName,
   resolveSnippetFile,
   resolveSnippetPaths,
   SnippetFileSystem
@@ -145,6 +146,42 @@ describe("resolveSnippetPaths", () => {
     }
   ])("$label", ({ config, expected }) => {
     expect(resolveSnippetPaths(config)).toEqual(expected);
+  });
+});
+
+describe("normalizeSnippetName", () => {
+  it.each([
+    { label: "a plain name", input: "card", expected: "card" },
+    { label: "a subfolder", input: "components/card", expected: "components/card" },
+    { label: "surrounding whitespace", input: "  card  ", expected: "card" },
+    { label: "a snippets/ prefix", input: "snippets/card", expected: "card" },
+    { label: "a .php suffix", input: "card.php", expected: "card" },
+    { label: "an uppercase .PHP suffix", input: "card.PHP", expected: "card" },
+    { label: "both prefix and suffix", input: "snippets/components/card.php", expected: "components/card" },
+    { label: "a leading slash", input: "/card", expected: "card" },
+    { label: "backslashes", input: "components\\card", expected: "components/card" },
+    { label: "a dot inside a name", input: "card.v2", expected: "card.v2" }
+  ])("normalizes $label", ({ input, expected }) => {
+    expect(normalizeSnippetName(input)).toBe(expected);
+  });
+
+  it.each([
+    { label: "empty input", input: "" },
+    { label: "whitespace only", input: "   " },
+    { label: "only a suffix", input: ".php" },
+    { label: "a parent segment", input: "../secrets" },
+    { label: "a parent segment in the middle", input: "components/../../secrets" },
+    { label: "a current-directory segment", input: "./card" },
+    { label: "a double slash", input: "components//card" },
+    { label: "a trailing slash", input: "components/" }
+  ])("rejects $label", ({ input }) => {
+    expect(normalizeSnippetName(input)).toBeNull();
+  });
+
+  it("produces a name that the parser finds again", () => {
+    const name = normalizeSnippetName("snippets/components/card.php");
+
+    expect(names(`snippet('${name}')`)).toEqual([name]);
   });
 });
 
