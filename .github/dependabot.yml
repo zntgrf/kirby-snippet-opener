@@ -5,13 +5,24 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Berlin"
+
+    # The project has no runtime dependencies, so everything dependabot can
+    # touch belongs in one batch. The limit keeps it at one open PR: instead
+    # of opening a second one, dependabot updates the existing branch.
+    open-pull-requests-limit: 1
 
     groups:
       dev-dependencies:
+        applies-to: version-updates
         dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
+        patterns: ["*"]
+      dev-dependencies-security:
+        applies-to: security-updates
+        dependency-type: "development"
+        patterns: ["*"]
 
     ignore:
       # typescript majors break the @typescript-eslint peer range; bump by hand
@@ -21,3 +32,6 @@ updates:
       - dependency-name: "@types/vscode"
       # tied to the node version of the extension host
       - dependency-name: "@types/node"
+
+    commit-message:
+      prefix: "chore(deps)"
