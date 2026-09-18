@@ -90,29 +90,34 @@ function registerCreateSnippetFromSelectionCommand(): vscode.Disposable {
 function registerSnippetDocumentLinkProvider(): vscode.Disposable {
   return vscode.languages.registerDocumentLinkProvider("php", {
     async provideDocumentLinks(document) {
-      const links: vscode.DocumentLink[] = [];
-
-      for (const call of findSnippetCalls(document.getText())) {
-        const link = await createDocumentLink(document, call);
-        if (link) {
-          links.push(link);
-        }
+      const calls = findSnippetCalls(document.getText());
+      if (calls.length === 0) {
+        return [];
       }
 
-      return links;
+      // One resolver for the whole pass: the configuration is read once,
+      // directory listings are shared between the globs, and a snippet used
+      // several times in the same file is looked up once. This runs on every
+      // edit, so a template with 30 calls must not mean 30 directory walks.
+      const resolveSnippet = createSnippetResolver();
+
+      const links = await Promise.all(
+        calls.map(async (call) => {
+          const snippetUri = await resolveSnippet(call.name);
+          return snippetUri ? createDocumentLink(document, call, snippetUri) : null;
+        })
+      );
+
+      return links.filter((link) => link !== null);
     }
   });
 }
 
-async function createDocumentLink(
+function createDocumentLink(
   document: vscode.TextDocument,
-  call: SnippetCall
-): Promise<vscode.DocumentLink | null> {
-  const snippetUri = await resolveSnippetUri(call.name);
-  if (!snippetUri) {
-    return null;
-  }
-
+  call: SnippetCall,
+  snippetUri: vscode.Uri
+): vscode.DocumentLink {
   const range = new vscode.Range(
     document.positionAt(call.nameStart),
     document.positionAt(call.nameEnd)
@@ -124,27 +129,37 @@ async function createDocumentLink(
   return link;
 }
 
-/**
- * Resolves the URI for a snippet by searching all configured snippet paths.
- * Returns the first match found, or null if not found.
- */
+/** Resolves a single snippet to its URI, or null if it does not exist. */
 async function resolveSnippetUri(snippetName: string): Promise<vscode.Uri | null> {
+  return createSnippetResolver()(snippetName);
+}
+
+/**
+ * A snippet lookup that memoizes within its own lifetime. Create one per
+ * batch of lookups, never a long-lived one: it would not notice new files.
+ */
+function createSnippetResolver(): (name: string) => Promise<vscode.Uri | null> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   if (!workspaceFolder) {
-    return null;
+    return async () => null;
   }
 
-  const relativePath = await resolveSnippetFile(
-    createWorkspaceFileSystem(workspaceFolder),
-    getSnippetPaths(),
-    snippetName
-  );
+  const fileSystem = createWorkspaceFileSystem(workspaceFolder);
+  const paths = getSnippetPaths();
+  const resolved = new Map<string, Promise<vscode.Uri | null>>();
 
-  if (!relativePath) {
-    return null;
-  }
+  return (name) => {
+    let pending = resolved.get(name);
 
-  return vscode.Uri.joinPath(workspaceFolder.uri, relativePath);
+    if (!pending) {
+      pending = resolveSnippetFile(fileSystem, paths, name).then((relativePath) =>
+        relativePath ? vscode.Uri.joinPath(workspaceFolder.uri, relativePath) : null
+      );
+      resolved.set(name, pending);
+    }
+
+    return pending;
+  };
 }
 
 function createWorkspaceFileSystem(
@@ -152,6 +167,8 @@ function createWorkspaceFileSystem(
 ): SnippetFileSystem {
   const toUri = (path: string) =>
     path ? vscode.Uri.joinPath(workspaceFolder.uri, path) : workspaceFolder.uri;
+
+  const listings = new Map<string, Promise<string[]>>();
 
   return {
     async fileExists(path) {
@@ -163,15 +180,21 @@ function createWorkspaceFileSystem(
       }
     },
 
-    async readDirectories(path) {
-      try {
-        const entries = await vscode.workspace.fs.readDirectory(toUri(path));
-        return entries
-          .filter(([, type]) => type === vscode.FileType.Directory)
-          .map(([name]) => name);
-      } catch {
-        return [];
+    readDirectories(path) {
+      let pending = listings.get(path);
+
+      if (!pending) {
+        pending = Promise.resolve(vscode.workspace.fs.readDirectory(toUri(path))).then(
+          (entries) =>
+            entries
+              .filter(([, type]) => type === vscode.FileType.Directory)
+              .map(([name]) => name),
+          () => []
+        );
+        listings.set(path, pending);
       }
+
+      return pending;
     }
   };
 }
