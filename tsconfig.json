@@ -6,6 +6,8 @@
 		"lib": [
 			"ES2022"
 		],
+		// TypeScript 6 no longer pulls @types packages in automatically.
+		// Needed for TextEncoder; the extension uses no other node API.
 		"types": [
 			"node"
 		],

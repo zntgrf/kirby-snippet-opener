@@ -246,11 +246,12 @@ async function createSnippetFile(snippetName: string, content: string): Promise<
 
   try {
     await vscode.workspace.fs.createDirectory(dirUri);
-    await vscode.workspace.fs.writeFile(fullUri, Buffer.from(content, "utf8"));
+    await vscode.workspace.fs.writeFile(fullUri, new TextEncoder().encode(content));
     vscode.window.showInformationMessage(`Snippet created at ${snippetName}`);
     return true;
-  } catch (error: any) {
-    vscode.window.showErrorMessage(`Error creating snippet: ${error.message}`);
+  } catch (error: unknown) {
+    const reason = error instanceof Error ? error.message : String(error);
+    vscode.window.showErrorMessage(`Error creating snippet: ${reason}`);
     return false;
   }
 }
