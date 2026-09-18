@@ -2,7 +2,8 @@
   "name": "kirbysnippetopener",
   "displayName": "Kirby Snippet Opener",
   "description": "simplifies the process of navigating and managing snippet templates in Kirby CMS projects",
-  "version": "0.1.5",
+  "version": "0.1.6",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.94.0"
   },
