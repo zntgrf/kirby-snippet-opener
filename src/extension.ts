@@ -1,5 +1,12 @@
 import * as vscode from "vscode";
-import { getSnippetRegex } from "./snippetRegex";
+import {
+  findSnippetCalls,
+  findSnippetCreationBase,
+  resolveSnippetFile,
+  resolveSnippetPaths,
+  SnippetCall,
+  SnippetFileSystem
+} from "./snippets";
 
 export function activate(context: vscode.ExtensionContext) {
   const disposables = [
@@ -62,13 +69,9 @@ function registerSnippetDocumentLinkProvider(): vscode.Disposable {
   return vscode.languages.registerDocumentLinkProvider("php", {
     async provideDocumentLinks(document) {
       const links: vscode.DocumentLink[] = [];
-      const text = document.getText();
-      const regex = getSnippetRegex();
-      let match;
 
-      while ((match = regex.exec(text)) !== null) {
-        const snippetName = match[2];
-        const link = await createDocumentLink(document, match, snippetName);
+      for (const call of findSnippetCalls(document.getText())) {
+        const link = await createDocumentLink(document, call);
         if (link) {
           links.push(link);
         }
@@ -81,36 +84,26 @@ function registerSnippetDocumentLinkProvider(): vscode.Disposable {
 
 async function createDocumentLink(
   document: vscode.TextDocument,
-  match: RegExpExecArray,
-  snippetName: string
+  call: SnippetCall
 ): Promise<vscode.DocumentLink | null> {
-  const snippetUri = await resolveSnippetUri(snippetName);
+  const snippetUri = await resolveSnippetUri(call.name);
   if (!snippetUri) {
     return null;
   }
 
-  const range = getSnippetNameRange(document, match);
+  const range = new vscode.Range(
+    document.positionAt(call.nameStart),
+    document.positionAt(call.nameEnd)
+  );
+
   const link = new vscode.DocumentLink(range, snippetUri);
-  link.tooltip = `Open snippet: ${snippetName}.php`;
+  link.tooltip = `Open snippet: ${call.name}.php`;
 
   return link;
 }
 
-function getSnippetNameRange(document: vscode.TextDocument, match: RegExpExecArray): vscode.Range {
-  const quoteChar = match[1];
-  const snippetName = match[2];
-  const matchStart = match.index;
-
-  const snippetNameStartInMatch = match[0].indexOf(quoteChar) + 1;
-  const snippetNameStart = document.positionAt(matchStart + snippetNameStartInMatch);
-  const snippetNameEnd = document.positionAt(matchStart + snippetNameStartInMatch + snippetName.length);
-
-  return new vscode.Range(snippetNameStart, snippetNameEnd);
-}
-
 /**
  * Resolves the URI for a snippet by searching all configured snippet paths.
- * Glob patterns (e.g. site/plugins/*\/snippets) are expanded.
  * Returns the first match found, or null if not found.
  */
 async function resolveSnippetUri(snippetName: string): Promise<vscode.Uri | null> {
@@ -119,45 +112,55 @@ async function resolveSnippetUri(snippetName: string): Promise<vscode.Uri | null
     return null;
   }
 
-  const snippetPaths = getSnippetPaths();
+  const relativePath = await resolveSnippetFile(
+    createWorkspaceFileSystem(workspaceFolder),
+    getSnippetPaths(),
+    snippetName
+  );
 
-  for (const pattern of snippetPaths) {
-    if (pattern.includes("*")) {
-      const globPattern = new vscode.RelativePattern(workspaceFolder, `${pattern}/${snippetName}.php`);
-      const matches = await vscode.workspace.findFiles(globPattern, null, 1);
-      if (matches.length > 0) {
-        return matches[0];
-      }
-    } else {
-      const uri = vscode.Uri.joinPath(workspaceFolder.uri, pattern, `${snippetName}.php`);
-      try {
-        await vscode.workspace.fs.stat(uri);
-        return uri;
-      } catch {
-        // file not found, try next path
-      }
-    }
+  if (!relativePath) {
+    return null;
   }
 
-  return null;
+  return vscode.Uri.joinPath(workspaceFolder.uri, relativePath);
+}
+
+function createWorkspaceFileSystem(
+  workspaceFolder: vscode.WorkspaceFolder
+): SnippetFileSystem {
+  const toUri = (path: string) =>
+    path ? vscode.Uri.joinPath(workspaceFolder.uri, path) : workspaceFolder.uri;
+
+  return {
+    async fileExists(path) {
+      try {
+        await vscode.workspace.fs.stat(toUri(path));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    async readDirectories(path) {
+      try {
+        const entries = await vscode.workspace.fs.readDirectory(toUri(path));
+        return entries
+          .filter(([, type]) => type === vscode.FileType.Directory)
+          .map(([name]) => name);
+      } catch {
+        return [];
+      }
+    }
+  };
 }
 
 function getSnippetPaths(): string[] {
   const config = vscode.workspace.getConfiguration("kirbysnippetopener");
 
-  // New multi-path setting takes precedence
-  const snippetPaths = config.get<string[]>("snippetPaths");
-  if (snippetPaths && snippetPaths.length > 0) {
-    return snippetPaths;
-  }
-
-  // Fall back to deprecated single-path setting
-  const snippetPath = config.get<string>("snippetPath");
-  if (snippetPath) {
-    return [snippetPath];
-  }
-
-  return ["site/snippets", "site/plugins/*/snippets"];
+  return resolveSnippetPaths({
+    snippetPaths: config.get<string[]>("snippetPaths"),
+    snippetPath: config.get<string>("snippetPath")
+  });
 }
 
 async function promptForSnippetPath(): Promise<string | undefined> {
@@ -169,10 +172,7 @@ async function promptForSnippetPath(): Promise<string | undefined> {
 
 async function createSnippetFile(snippetPath: string, content: string): Promise<boolean> {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-  const snippetPaths = getSnippetPaths();
-
-  // Create new snippets in the first non-glob path
-  const targetBase = snippetPaths.find(p => !p.includes("*"));
+  const targetBase = findSnippetCreationBase(getSnippetPaths());
 
   if (!targetBase) {
     vscode.window.showErrorMessage("No valid snippet path configured for creating snippets.");
@@ -217,6 +217,3 @@ async function replaceSelectionWithSnippetCall(
     editBuilder.replace(editor.selection, snippetCall);
   });
 }
-
-// Export for testing
-export { getSnippetRegex as snippetRegex, registerSnippetDocumentLinkProvider };
