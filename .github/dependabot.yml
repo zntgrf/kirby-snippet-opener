@@ -1,11 +1,23 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
       interval: "weekly"
+
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+    ignore:
+      # typescript majors break the @typescript-eslint peer range; bump by hand
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # tied to engines.vscode, not to what is on the registry
+      - dependency-name: "@types/vscode"
+      # tied to the node version of the extension host
+      - dependency-name: "@types/node"
